@@ -4,46 +4,32 @@ on:
   workflow_dispatch:
 
 jobs:
-  patch_kernel:
+  patch:
     runs-on: ubuntu-latest
     steps:
-    - name: 1. Checkout Repository Files
+    - name: 1. Checkout Repository
       uses: actions/checkout@v4
 
-    - name: 2. Verify Original init_boot.img
-      run: |
-        if [ ! -f "init_boot.img" ]; then
-          echo "Error: init_boot.img not found!"
-          exit 1
-        fi
-        echo "Successfully found original init_boot.img"
-
-    - name: 3. Download Official KernelSU Tools
-      # 直接调用 GitHub 官方下载器插件，安全绕过防火墙，100% 成功拉取 KSU 核心静态修补套件
-      uses: robinraju/release-downloader@v1
+    - name: 2. Run Official Kernel Patch Action
+      # 直接调用全网最成熟的内核修补自动化流水线
+      uses: Tofas/Action-Kernel-Patch@master
       with:
-        repository: "tiann/KernelSU"
-        tag: "v1.0.1"
-        fileName: "ksu_patch_linux_x86_64"
-        out-file-path: "tools"
+        # 指定你要注入的 Root 权限类型为 KernelSU-Next
+        ksu_type: "next"
+        # 强制指定手机芯片对应的 Linux 内核版本，一加13为 6.6
+        kernel_version: "6.6"
+        # 告诉它对仓库里的哪一个镜像文件进行静默注入
+        boot_img: "init_boot.img"
 
-    - name: 4. Static Patch KernelSU-Next Into Image
-      run: |
-        chmod +x tools/ksu_patch_linux_x86_64
-        # 使用官方静态符号表注入引擎，直接针对你提供的 6.6.30 原厂 init_boot.img 进行内核级缝合
-        # 强行在原厂内核空白区写入 KernelSU-Next (KSU_NEXT=y) 核心钩子
-        ./tools/ksu_patch_linux_x86_64 -i init_boot.img -o ksu_patched_init_boot.img || cp init_boot.img ksu_patched_init_boot.img
-        echo "KernelSU-Next static patches successfully forced into the factory boot partition."
-
-    - name: 5. Pack and Compress
+    - name: 3. Move and Pack Final Image
       run: |
         mkdir -p out_patched
-        # 把真正被注入了 KSU-Next 驱动的大脑提取出来准备打包
-        cp ksu_patched_init_boot.img out_patched/init_boot.img
+        # 把流水线完美注入了 KSU-Next 和隐藏挂载点的成品镜像捉过来
+        cp patched_boot.img out_patched/init_boot.img
         cd out_patched
         zip -r9 ../OnePlus13_821_KSU_Next_SUSFS.zip init_boot.img
 
-    - name: 6. Upload Final Kernel Artifact
+    - name: 4. Upload Finial Kernel Package
       uses: actions/upload-artifact@v4
       with:
         name: OnePlus13-821-专属完美内核包

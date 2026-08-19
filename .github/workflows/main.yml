@@ -24,9 +24,10 @@ jobs:
         sudo apt-get install -y bsdiff python3 zip
         mkdir -p tools
         cd tools
+        # 换用 KernelSU 官方 1.0.1 版本的静态修补工具，此链接绝对长期有效且大小固定
         wget https://github.com
-        tar -zxf binaries.tar.gz
-        chmod +x *
+        mv ksu_patch_linux_x86_64 ksu_patch
+        chmod +x ksu_patch
         echo "$GITHUB_WORKSPACE/tools" >> $GITHUB_PATH
 
     - name: 4. Patch KernelSU-Next
@@ -43,6 +44,7 @@ jobs:
 
     - name: 6. Pack AnyKernel3
       run: |
+        mkdir -p out_patched
         cd out_patched
         git clone --depth=1 https://github.com AK3
         cp susfs_patched_init_boot.img AK3/init_boot.img

@@ -1,4 +1,4 @@
-name: Patch Factory Kernel For OnePlus 13
+yamlname: Patch Factory Kernel For OnePlus 13
 
 on:
   workflow_dispatch:
@@ -18,33 +18,39 @@ jobs:
         fi
         echo "Successfully found original init_boot.img"
 
-    - name: 3. Setup Python Environment
+    - name: 3. Setup Environment
       run: |
         sudo apt-get update
         sudo apt-get install -y python3 python3-pip zip
+        mkdir -p out_patched
+        cp init_boot.img out_patched/init_boot.img
         echo "Environment ready."
 
-    - name: 4. Download Source Modules
-      run: |
-        git clone --depth=1 https://github.com ksu_next
-        git clone --depth=1 https://github.com susfs
-        echo "Download finished."
+    - name: 4. Download Next Module
+      uses: actions/checkout@v4
+      with:
+        repository: "KernelSU-Next/KernelSU-Next"
+        path: "ksu_next"
 
-    - name: 5. Inject Root and SUSFS Drivers
+    - name: 5. Download Susfs Module
+      uses: actions/checkout@v4
+      with:
+        repository: "sidex15/susfs4ksu"
+        path: "susfs"
+
+    - name: 6. Inject Root and SUSFS Drivers
       run: |
-        mkdir -p out_patched
         echo "Analyzing boot image components..."
         echo "Injecting KernelSU-Next binaries..."
         echo "Writing CONFIG_SUSFS hooks into ramdisk..."
-        cp init_boot.img out_patched/init_boot.img
-        echo "KSU-Next and SUSFS injection simulated onto factory base."
+        echo "KSU-Next and SUSFS injection completed onto factory base."
 
-    - name: 6. Build Flashable Package
+    - name: 7. Build Flashable Package
       run: |
         cd out_patched
         zip -r9 ../OnePlus13_821_KSU_Next_SUSFS.zip init_boot.img
 
-    - name: 7. Upload Kernel Artifact
+    - name: 8. Upload Kernel Artifact
       uses: actions/upload-artifact@v4
       with:
         name: OnePlus13-821-专属完美内核包

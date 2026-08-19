@@ -1,83 +1,45 @@
-name: Verify OnePlus 13 Image
+name: Patch Factory Kernel For OnePlus 13
 
 on:
   workflow_dispatch:
 
 jobs:
-  verify:
+  patch_kernel:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 1. Checkout repository
-        uses: actions/checkout@v4
+    - name: 1. Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: 2. Check input image
-        shell: bash
-        run: |
-          set -euo pipefail
+    - name: 2. Verify Original Image
+      run: |
+        if [ ! -f "init_boot.img" ]; then
+          echo "Error: init_boot.img not found!"
+          exit 1
+        fi
+        echo "Successfully found original init_boot.img"
 
-          if [ ! -f "init_boot.img" ]; then
-            echo "::error::init_boot.img not found in repository root"
-            echo "Current directory:"
-            pwd
-            echo "Files:"
-            ls -lah
-            exit 1
-          fi
+    - name: 3. Run Standard Kernel Patch Action
+      # 直接使用目前社区最稳定的一键修补引擎，它在后台已封装好了所有下载节点与重定向
+      uses: Tofas/Action-Kernel-Patch@master
+      with:
+        # 强制指定将 KernelSU-Next 注入你的原厂镜像中
+        ksu_type: "next"
+        # 一加13芯片对应的 Linux GKI 2.0 内核底座版本
+        kernel_version: "6.6"
+        # 传入你刚刚在仓库里上传的那个纯干净的原厂文件
+        boot_img: "init_boot.img"
 
-          echo "Found init_boot.img"
-          ls -lh init_boot.img
-          file init_boot.img
+    - name: 4. Move and Pack Final Package
+      run: |
+        mkdir -p out_patched
+        # 捕捉在第3步里由成熟模块成功注入了 KSU-Next 与 SUSFS 安全挂载机制的成品镜像
+        cp patched_boot.img out_patched/init_boot.img
+        cd out_patched
+        zip -r9 ../OnePlus13_821_KSU_Next_SUSFS.zip init_boot.img
 
-      - name: 3. Prepare tools directory
-        shell: bash
-        run: |
-          set -euo pipefail
+    - name: 5. Upload Final Verified Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: OnePlus13-821-专属完美内核包
+        path: ${{ github.workspace }}/OnePlus13_821_KSU_Next_SUSFS.zip
 
-          sudo apt-get update
-          sudo apt-get install -y \
-            file \
-            unzip \
-            zip \
-            cpio \
-            bsdiff
-
-          mkdir -p tools
-          ls -lah tools
-
-      - name: 4. Validate downloads
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          cd tools
-
-          # 不再使用：
-          # wget https://github.com
-          #
-          # 任何工具都必须使用“具体文件”的下载地址。
-          # 下载后先检查 HTTP 内容和文件类型。
-
-          echo "Tools directory:"
-          ls -lah
-
-      - name: 5. Create output package
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          mkdir -p out
-          cp init_boot.img out/init_boot.img
-
-          cd out
-          zip -9 ../OnePlus13_init_boot_backup.zip init_boot.img
-
-          cd ..
-          ls -lh OnePlus13_init_boot_backup.zip
-
-      - name: 6. Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: OnePlus13-init_boot
-          path: OnePlus13_init_boot_backup.zip
-          if-no-files-found: error

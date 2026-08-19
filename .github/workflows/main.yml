@@ -1,4 +1,5 @@
-yamlname: Patch Factory Kernel For OnePlus 13
+yaml
+name: Patch Factory Kernel For OnePlus 13
 
 on:
   workflow_dispatch:

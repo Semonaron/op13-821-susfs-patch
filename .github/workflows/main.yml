@@ -1,4 +1,3 @@
-yaml
 name: Patch Factory Kernel For OnePlus 13
 
 on:
@@ -56,3 +55,4 @@ jobs:
       with:
         name: OnePlus13-821-专属完美内核包
         path: ${{ github.workspace }}/OnePlus13_821_KSU_Next_SUSFS.zip
+

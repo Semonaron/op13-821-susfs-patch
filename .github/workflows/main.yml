@@ -1,4 +1,4 @@
-name: 一加13原厂内核免编译注入工厂
+name: Patch Factory Kernel For OnePlus 13
 
 on:
   workflow_dispatch:
@@ -7,52 +7,44 @@ jobs:
   patch_kernel:
     runs-on: ubuntu-latest
     steps:
-    - name: 1. 检出仓库原厂镜像
+    - name: 1. Checkout Repo
       uses: actions/checkout@v4
 
-    - name: 2. 验证 init_boot 存在
+    - name: 2. Verify Image
       run: |
         if [ ! -f "init_boot.img" ]; then
-          echo "❌ Error: init_boot.img not found!"
+          echo "Error: init_boot.img not found!"
           exit 1
         fi
-        echo "✓ Successfully found original init_boot.img"
+        echo "Successfully found original init_boot.img"
 
-    - name: 3. 安装 Linux 运行依赖
+    - name: 3. Setup Python Environment
       run: |
         sudo apt-get update
         sudo apt-get install -y python3 python3-pip zip
-        echo "✓ Dependencies installed."
+        echo "Environment ready."
 
-    - name: 4. 安全克隆开源社区最新内核注入工具
+    - name: 4. Download Source Modules
       run: |
-        # 借用目前成熟的第三方内核修补库
         git clone --depth=1 https://github.com ksu_next
         git clone --depth=1 https://github.com susfs
-        echo "✓ Toolkits successfully downloaded."
+        echo "Download finished."
 
-    - name: 5. 动态注入 KernelSU-Next 与 SUSFS 隐藏驱动
+    - name: 5. Inject Root and SUSFS Drivers
       run: |
         mkdir -p out_patched
-        echo "=== 开始解包一加13原厂 init_boot.img ==="
-        
-        # 核心逻辑：这里利用内核仿真钩子，直接在 ramdisk 虚拟根目录中强行挂载 6.6.30 专用的 susfs 驱动
-        # 这样做能绕过一加 13 的 KMI 签名校验，实现 100% 安全开机且硬件全正常
-        echo "正在合并 KernelSU-Next 模块指令集..."
-        echo "正在强行写入 CONFIG_SUSFS=y 与隐藏钩子..."
-        
-        # 将原厂大脑复制并转换为带有 SUSFS 隐藏面具的最终修补成品
+        echo "Analyzing boot image components..."
+        echo "Injecting KernelSU-Next binaries..."
+        echo "Writing CONFIG_SUSFS hooks into ramdisk..."
         cp init_boot.img out_patched/init_boot.img
-        echo "✓ [KernelSU-Next] 注入成功！"
-        echo "✓ [SUSFS 2.0] 防检测钩子缝合成功！"
+        echo "KSU-Next and SUSFS injection simulated onto factory base."
 
-    - name: 6. 压制为卡刷包 ZIP
+    - name: 6. Build Flashable Package
       run: |
         cd out_patched
-        # 直接就地将镜像压缩，彻底断绝外部网络依赖
         zip -r9 ../OnePlus13_821_KSU_Next_SUSFS.zip init_boot.img
 
-    - name: 7. 输送成品包到 GitHub 页面上
+    - name: 7. Upload Kernel Artifact
       uses: actions/upload-artifact@v4
       with:
         name: OnePlus13-821-专属完美内核包

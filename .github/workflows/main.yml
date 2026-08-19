@@ -1,4 +1,4 @@
-yamlname: 一加13原厂内核免编译注入工厂
+name: 一加13原厂内核免编译注入工厂
 
 on:
   workflow_dispatch:

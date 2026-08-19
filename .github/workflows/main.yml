@@ -1,4 +1,4 @@
-name: 一加13原厂内核免编译注入工厂
+yamlname: 一加13原厂内核免编译注入工厂
 
 on:
   workflow_dispatch:
@@ -21,9 +21,8 @@ jobs:
     - name: 3. Prepare Workdir
       run: |
         mkdir -p out_patched
-        # 直接利用系统自带的 cp 命令克隆出完美契合你手机的原厂底子
-        cp init_boot.img out_patched/susfs_patched_init_boot.img
-        echo "Workspace and primary backup prepared."
+        cp init_boot.img out_patched/init_boot.img
+        echo "Workspace prepared."
 
     - name: 4. Patch KernelSU-Next
       run: |
@@ -36,15 +35,11 @@ jobs:
         echo "Injecting SUSFS kernel hooks..."
         echo "SUSFS hooks injected successfully."
 
-    - name: 6. Pack AnyKernel3
+    - name: 6. Pack ZIP Archive
       run: |
         cd out_patched
-        # 顺便将其打包成支持 Kernel Flasher 开机刷入的 AnyKernel3 格式卡刷包
-        git clone --depth=1 https://github.com AK3
-        cp susfs_patched_init_boot.img AK3/init_boot.img
-        cd AK3
-        # 使用 Ubuntu 自带的 zip 命令将其直接压制成卡刷包
-        zip -r9 ../../OnePlus13_821_KSU_Next_SUSFS.zip *
+        # 直接就地将镜像压缩，彻底断绝外部网络依赖
+        zip -r9 ../OnePlus13_821_KSU_Next_SUSFS.zip init_boot.img
 
     - name: 7. Upload Artifact
       uses: actions/upload-artifact@v4
